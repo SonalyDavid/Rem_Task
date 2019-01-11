@@ -1,0 +1,137 @@
+import mysql.connector
+import mysql.connector.errors
+
+
+def create_database(db_cursor):
+
+    try:
+        db_cursor.execute("CREATE DATABASE reminder")
+    except mysql.connector.errors.DatabaseError:
+        return
+    print("Database reminder created")
+
+
+def connect_database(db_cursor):
+    db_cursor.execute("USE reminder")
+
+
+def create_table(db_cursor):
+    try:
+        db_cursor.execute(
+            "CREATE TABLE reminders (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), description VARCHAR(255), date VARCHAR(10))")
+    except mysql.connector.errors.ProgrammingError as error:
+        print("Create table error:" + str(error))
+
+
+def insert_table(db, db_cursor, query, values):
+    db_cursor.execute(query, values)
+    db.commit()
+
+
+def display_table(db_cursor):
+    try:
+        db_cursor.execute("SELECT * FROM reminders")
+    except mysql.connector.errors.ProgrammingError:
+        print("Table is empty")
+        return
+    info = db_cursor.fetchall()
+
+    for i in info:
+        print(
+            "Reminder Name:" + str(i[0]) + "\n" +
+            "Reminder Description:" + str(i[1]) + "\n" +
+            "Reminder Date:" + str(i[2])
+        )
+
+
+def update_table(db, db_cursor, update_query, update_values):
+    try:
+        db_cursor.execute(update_query, update_values)
+    except mysql.connector.errors.ProgrammingError:
+        print("[ERR]Cannot update the table!")
+        return
+    db.commit()
+
+
+def main():
+    print("Enter the following database credentials:")
+    host = input("\thost : ")
+    user = input("\tuser : ")
+    passwd = input("\tpassword : ")
+    try:
+        mydb = mysql.connector.connect(
+            host=host,
+            user=user,
+            passwd=passwd
+        )
+    except mysql.connector.errors.ProgrammingError:
+        print("Invalid database credientials.... Aborting the program!")
+
+    print("Connected to database.")
+    db_cursor = mydb.cursor()
+    create_database(db_cursor)
+    connect_database(db_cursor)
+    create_table(db_cursor)
+
+    while(1):
+        print(
+            "MENU"
+            "\n1.Create new reminder"
+            "\n2.Update reminder"
+            "\n3.Display all reminder"
+            "\n4.Exit"
+        )
+        choice = input("=>")
+
+        if choice == '1':
+            print("Enter values for the new reminder")
+            name = input("\nReminder Name:")
+            description = input("\nReminder description:")
+            date = input("\nReminder date:")
+            query = "INSERT INTO reminders (name,description,date) VALUES (%s, %s, %s)"
+            values = (name, description, date)
+            insert_table(mydb, db_cursor, query, values)
+            print(db_cursor.rowcount, "was inserted")
+
+        elif choice == '2':
+
+            print(
+                "Update Menu"
+                "\n\t1.Update Date"
+                "\n\t2.Update Name"
+            )
+            update_choice = input("\n=>")
+
+            if update_choice == '1':
+
+                update_query = "UPDATE reminders SET date = %s WHERE date = %s"
+                old_date = input(
+                    "\nEnter the old date to be updated:")
+                new_date = input("\nEnter the new date:")
+                update_values = (new_date, old_date)
+
+            elif update_choice == '2':
+                update_query = "UPDATE reminders SET name = %s WHERE name = %s"
+                old_name = input("\nEnter the old name to be updated:")
+                new_name = input("\nEnter the new name:")
+                update_values = (new_name, old_name)
+
+            update_table(mydb, db_cursor, update_query, update_values)
+
+        elif choice == '3':
+            display_table(db_cursor)
+
+        elif choice == '4':
+            exit(0)
+
+
+"""update_value = "20th Jan"
+where_to_update = "18/01/2019"
+update_query = "UPDATE reminders SET %s = %s WHERE %s = %s"
+update_values = (what_to_update, update_value, what_to_update, where_to_update)
+update_table(mydb, db_cursor, update_query, update_values)
+"""
+
+
+if __name__ == "__main__":
+    main()
